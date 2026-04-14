@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart To-Do Board</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🧠 Smart To-Do Board</h1>
+
+<div class="input-box">
+    <input id="task" placeholder="Enter task...">
+    <button onclick="addTask()">Add</button>
+</div>
+
+<div id="board"></div>
+
+<script>
+let board = document.getElementById("board");
+
+// Load saved tasks
+window.onload = function() {
+    let saved = JSON.parse(localStorage.getItem("tasks")) || [];
+    saved.forEach(t => createNote(t.text, t.top, t.left, t.color));
+};
+
+// Save tasks
+function saveTasks() {
+    let notes = document.querySelectorAll(".note");
+    let data = [];
+
+    notes.forEach(n => {
+        data.push({
+            text: n.querySelector("span").innerText,
+            top: n.style.top,
+            left: n.style.left,
+            color: n.style.background
+        });
+    });
+
+    localStorage.setItem("tasks", JSON.stringify(data));
+}
+
+// Add task
+function addTask() {
+    let text = document.getElementById("task").value;
+    if(text === "") return;
+
+    createNote(text);
+    document.getElementById("task").value = "";
+    saveTasks();
+}
+
+// Create note
+function createNote(text, top, left, color) {
+
+    let note = document.createElement("div");
+    note.className = "note";
+
+    note.innerHTML = `
+        <span>${text}</span>
+        <button class="del">🗑</button>
+    `;
+
+    // Position
+    note.style.top = top || Math.random()*70 + "vh";
+    note.style.left = left || Math.random()*80 + "vw";
+
+    // Colors
+    let colors = ["#ffeb3b","#ffcc80","#b2ff59","#81d4fa","#f48fb1"];
+    note.style.background = color || colors[Math.floor(Math.random()*colors.length)];
+
+    // Drag
+    note.onmousedown = function(e) {
+        let shiftX = e.clientX - note.getBoundingClientRect().left;
+        let shiftY = e.clientY - note.getBoundingClientRect().top;
+
+        function moveAt(pageX, pageY) {
+            note.style.left = pageX - shiftX + "px";
+            note.style.top = pageY - shiftY + "px";
+        }
+
+        function onMouseMove(e) {
+            moveAt(e.pageX, e.pageY);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+
+        document.onmouseup = function() {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.onmouseup = null;
+            saveTasks();
+        };
+    };
+
+    note.ondragstart = () => false;
+
+    // Delete
+    note.querySelector(".del").onclick = function(e) {
+        e.stopPropagation();
+        note.remove();
+        saveTasks();
+    };
+
+    board.appendChild(note);
+}
+</script>
+
+</body>
+</html>
